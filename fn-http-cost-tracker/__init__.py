@@ -53,6 +53,10 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         resourceGroups = resource_mgmt_client.resource_groups.list()
 
         rgs_cost_dict = {}
+        rgs_cost_dict["resourceGroupCost"] = list()
+        rgs_cost_dict["vcsaTotalCost"] = float(0)
+        rgs_cost_dict["smfpTotalCost"] = float(0)
+
 
         for rg in list(resourceGroups):
             if rg.managed_by is None:
@@ -65,14 +69,19 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                     last_7_days_cost = list()
                     for i in range(len(rows_of_cost)-7,len(rows_of_cost)):
                         last_7_days_cost.append(rows_of_cost[i][0])
-                    avg_cost = sum(last_7_days_cost)/7
+                    avg_cost = round(sum(last_7_days_cost)/7,2)
 
                     if(avg_cost > 23):
-                        logging.info("Threshold exceeded by {0}".format(abs(avg_cost-23)))
+                        logging.info("Threshold exceeded by {0}".format(abs(avg_cost-23.00)))
 
                     logging.info("Avg Cost: $ {0}".format(avg_cost))
-
-                    rgs_cost_dict[rg.name] = float(avg_cost)
+                    
+                    rgs_cost_dict["resourceGroupCost"].append({rg.name: float(avg_cost)})
+                    if rg.tags is not None and "Offering" in rg.tags.keys():
+                        if rg.tags['Offering'] == "SQL Server Migration" or rg.tags['Offering'] == "SQL Migration":
+                            rgs_cost_dict["smfpTotalCost"] = rgs_cost_dict["smfpTotalCost"] + avg_cost
+                        else:
+                            rgs_cost_dict["vcsaTotalCost"] = rgs_cost_dict["vcsaTotalCost"] + avg_cost
 
                     rgs_cost_json = json.dumps(rgs_cost_dict)
                 else:
