@@ -13,12 +13,12 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Python HTTP trigger function processed a request.')
 
     try:
-        req_body = req.get_json()
+        req_body = req.get_json() # -> params no. of days and date
 
-        from_datetime =  datetime.strptime(req_body.get('fromDatetime'), "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)
-        to_datetime = datetime.strptime(req_body.get('toDatetime'), "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)
+        from_datetime =  datetime.strptime(req_body.get('fromDatetime'), "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc) # this changes -> date - no. of days
+        to_datetime = datetime.strptime(req_body.get('toDatetime'), "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc) # date
 
-        cred = DefaultAzureCredential(
+        cred = DefaultAzureCredential( # diff method for retrieving token
             exclude_cli_credential = False,
             exclude_environment_credential = True,
             exclude_managed_identity_credential = True,
@@ -65,11 +65,11 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
                 query_result_dict = query_result.as_dict()
                 rows_of_cost = query_result_dict["rows"]
-                if(len(rows_of_cost) > 7):
+                if(len(rows_of_cost) > 7): # 7 -> no. of days
                     last_7_days_cost = list()
-                    for i in range(len(rows_of_cost)-7,len(rows_of_cost)):
+                    for i in range(len(rows_of_cost)-7,len(rows_of_cost)): # 7 -> no. of days
                         last_7_days_cost.append(rows_of_cost[i][0])
-                    avg_cost = round(sum(last_7_days_cost)/7,2)
+                    avg_cost = round(sum(last_7_days_cost)/7,2) # 7 -> no. of days
 
                     if(avg_cost > 23):
                         logging.info("Threshold exceeded by {0}".format(abs(avg_cost-23.00)))
@@ -85,7 +85,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
                     rgs_cost_json = json.dumps(rgs_cost_dict)
                 else:
-                    logging.info("Cost data not available for the past 7 days")
+                    logging.info("Cost data not available for the past 7 days") # 7 -> no. of days 
             
         return func.HttpResponse(rgs_cost_json)         
 
