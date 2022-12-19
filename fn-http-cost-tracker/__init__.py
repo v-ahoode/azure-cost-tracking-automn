@@ -5,8 +5,7 @@ from datetime import datetime, timezone, timedelta
 from azure.identity import DefaultAzureCredential
 from azure.mgmt.costmanagement import CostManagementClient
 from azure.mgmt.resource import ResourceManagementClient
-from azure.mgmt.costmanagement.models import ( QueryDefinition, ExportType, TimeframeType, QueryTimePeriod, 
-        GranularityType, QueryDataset, QueryAggregation, QueryGrouping)
+from azure.mgmt.costmanagement.models import ( QueryDefinition, ExportType, TimeframeType, QueryTimePeriod, GranularityType, QueryDataset, QueryAggregation, QueryGrouping)
 import json
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
@@ -22,8 +21,8 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             
         toDate = req_body.get('toDate')
 
-        from_datetime =  ((datetime.strptime(toDate, "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)) - timedelta(days=numDays-1)) # this changes -> date - no. of days
-        to_datetime = datetime.strptime(toDate, "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc) # date
+        from_datetime =  ((datetime.strptime(toDate, "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)) - timedelta(days=numDays-1)) 
+        to_datetime = datetime.strptime(toDate, "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc) 
         
         cred = DefaultAzureCredential( 
             exclude_cli_credential = False,
