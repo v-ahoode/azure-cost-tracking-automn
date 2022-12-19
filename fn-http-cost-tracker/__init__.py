@@ -14,8 +14,12 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
     try:
         req_body = req.get_json() 
-
-        numDays = int(req_body.get('numDays'))
+        
+        if req_body.get('numDays') is None:
+            numDays = 7
+        else:
+            numDays = int(req_body.get('numDays'))
+            
         toDate = req_body.get('toDate')
 
         from_datetime =  ((datetime.strptime(toDate, "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)) - timedelta(days=numDays-1)) # this changes -> date - no. of days
