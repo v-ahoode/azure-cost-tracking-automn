@@ -1,7 +1,7 @@
 import logging
 
 import azure.functions as func
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from azure.identity import DefaultAzureCredential
 from azure.mgmt.costmanagement import CostManagementClient
 from azure.mgmt.resource import ResourceManagementClient
@@ -13,12 +13,15 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Python HTTP trigger function processed a request.')
 
     try:
-        req_body = req.get_json() # -> params no. of days and date
+        req_body = req.get_json() 
 
-        from_datetime =  datetime.strptime(req_body.get('fromDatetime'), "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc) # this changes -> date - no. of days
-        to_datetime = datetime.strptime(req_body.get('toDatetime'), "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc) # date
+        numDays = int(req_body.get('numDays'))
+        toDate = req_body.get('toDate')
 
-        cred = DefaultAzureCredential( # diff method for retrieving token
+        from_datetime =  ((datetime.strptime(toDate, "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)) - timedelta(days=numDays-1)) # this changes -> date - no. of days
+        to_datetime = datetime.strptime(toDate, "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc) # date
+        
+        cred = DefaultAzureCredential( 
             exclude_cli_credential = False,
             exclude_environment_credential = True,
             exclude_managed_identity_credential = True,
@@ -65,28 +68,30 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
                 query_result_dict = query_result.as_dict()
                 rows_of_cost = query_result_dict["rows"]
-                if(len(rows_of_cost) > 7): # 7 -> no. of days
-                    last_7_days_cost = list()
-                    for i in range(len(rows_of_cost)-7,len(rows_of_cost)): # 7 -> no. of days
-                        last_7_days_cost.append(rows_of_cost[i][0])
-                    avg_cost = round(sum(last_7_days_cost)/7,2) # 7 -> no. of days
+                
+                if(len(rows_of_cost) == numDays): 
+                    past_numDays_cost = list()
+                    for row in rows_of_cost: 
+                        past_numDays_cost.append(row[0])
+                    avg_cost = float(sum(past_numDays_cost)/numDays) 
 
-                    if(avg_cost > 23):
-                        logging.info("Threshold exceeded by {0}".format(abs(avg_cost-23.00)))
-
-                    logging.info("Avg Cost: $ {0}".format(avg_cost))
+                    logging.info("Avg Cost: $ {0}".format(round(avg_cost,2)))
                     
-                    rgs_cost_dict["resourceGroupCost"].append({rg.name: float(avg_cost)})
+                    rgs_cost_dict["resourceGroupCost"].append({rg.name: round(avg_cost,2)})
                     if rg.tags is not None and "Offering" in rg.tags.keys():
                         if rg.tags['Offering'] == "SQL Server Migration" or rg.tags['Offering'] == "SQL Migration":
                             rgs_cost_dict["smfpTotalCost"] = rgs_cost_dict["smfpTotalCost"] + avg_cost
                         else:
                             rgs_cost_dict["vcsaTotalCost"] = rgs_cost_dict["vcsaTotalCost"] + avg_cost
-
-                    rgs_cost_json = json.dumps(rgs_cost_dict)
+        
                 else:
-                    logging.info("Cost data not available for the past 7 days") # 7 -> no. of days 
-            
+                    logging.info(f"Cost data not available for the past {numDays} days for RG - {rg.name}")
+
+        rgs_cost_dict["vcsaTotalCost"] = round(rgs_cost_dict["vcsaTotalCost"],2)            
+        rgs_cost_dict["smfpTotalCost"] = round(rgs_cost_dict["smfpTotalCost"],2)      
+
+        rgs_cost_json = json.dumps(rgs_cost_dict)
+
         return func.HttpResponse(rgs_cost_json)         
 
     except Exception as e:
