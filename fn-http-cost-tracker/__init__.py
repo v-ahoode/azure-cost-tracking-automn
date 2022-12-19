@@ -28,12 +28,11 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         cred = DefaultAzureCredential( 
             exclude_cli_credential = False,
             exclude_environment_credential = True,
-            exclude_managed_identity_credential = True,
+            exclude_managed_identity_credential = False,
             exclude_powershell_credential = True,
             exclude_visual_studio_code_credential = True,
             exclude_shared_token_cache_credential = True,
             exclude_interactive_browser_credential = True,
-            visual_studio_code_tenant_id = "8dc94566-ec40-4aad-abe0-739751b9d5b4"
         )  
 
         subscription_id = "edf6dd9d-7c4a-4bca-a997-945f3d60cf4e"
@@ -96,7 +95,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
         rgs_cost_json = json.dumps(rgs_cost_dict)
 
-        return func.HttpResponse(rgs_cost_json)         
+        return func.HttpResponse(rgs_cost_json,status_code=200)         
 
     except Exception as e:
         logging.exception(e)
