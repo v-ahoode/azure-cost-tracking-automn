@@ -1,5 +1,6 @@
 # Misc
 test.py
+env.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

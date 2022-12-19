@@ -5,7 +5,7 @@ from datetime import datetime, timezone, timedelta
 from azure.identity import DefaultAzureCredential
 from azure.mgmt.costmanagement import CostManagementClient
 from azure.mgmt.resource import ResourceManagementClient
-from azure.mgmt.costmanagement.models import ( QueryDefinition, ExportType, TimeframeType, QueryTimePeriod, GranularityType, QueryDataset, QueryAggregation, QueryGrouping)
+from azure.mgmt.costmanagement.models import (QueryDefinition, ExportType, TimeframeType, QueryTimePeriod, GranularityType, QueryDataset, QueryAggregation, QueryGrouping)
 import json
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
@@ -20,6 +20,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             numDays = int(req_body.get('numDays'))
             
         toDate = req_body.get('toDate')
+        scope = req_body.get('scope')
 
         from_datetime =  ((datetime.strptime(toDate, "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)) - timedelta(days=numDays-1)) 
         to_datetime = datetime.strptime(toDate, "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc) 
@@ -34,7 +35,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             exclude_interactive_browser_credential = True,
         )  
 
-        subscription_id = "edf6dd9d-7c4a-4bca-a997-945f3d60cf4e"
+        subscription_id = scope.split("/")[2]
 
         cost_mgmt_client = CostManagementClient(cred, 'https://management.azure.com')
 
@@ -65,7 +66,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
         for rg in list(resourceGroups):
             if rg.managed_by is None:
-                scope_with_rg = '' + req_body.get('scope') + str(rg.name)
+                scope_with_rg = '' + scope + str(rg.name)
                 query_result = cost_mgmt_client.query.usage(scope=scope_with_rg, parameters=query_def)
 
                 query_result_dict = query_result.as_dict()
