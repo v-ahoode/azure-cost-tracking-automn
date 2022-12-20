@@ -80,7 +80,10 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
                     logging.info("Avg Cost: $ {0}".format(round(avg_cost,2)))
                     
-                    rgs_cost_dict["resourceGroupCost"].append({rg.name: round(avg_cost,2)})
+                    rgs_cost_dict["resourceGroupCost"].append({
+                        "rgname":  rg.name,
+                        "rgcost": round(avg_cost,2)
+                    })
                     if rg.tags is not None and "Offering" in rg.tags.keys():
                         if rg.tags['Offering'] == "SQL Server Migration" or rg.tags['Offering'] == "SQL Migration":
                             rgs_cost_dict["smfpTotalCost"] = rgs_cost_dict["smfpTotalCost"] + avg_cost
