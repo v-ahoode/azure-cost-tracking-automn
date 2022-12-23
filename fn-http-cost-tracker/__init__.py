@@ -18,12 +18,16 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             numDays = 7
         else:
             numDays = int(req_body.get('numDays'))
+
+        if req_body.get('toDate') is None:
+            toDate = datetime.strptime(datetime.utcnow().strftime("%Y-%m-%d %H:%M"), "%Y-%m-%d %H:%M").replace(tzinfo = timezone.utc)
+        else:
+            toDate = datetime.strptime(req_body.get('toDate'), "%Y-%m-%d %H:%M").replace(tzinfo = timezone.utc)
             
-        toDate = req_body.get('toDate')
         scope = req_body.get('scope')
 
-        from_datetime =  ((datetime.strptime(toDate, "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)) - timedelta(days=numDays-1)) 
-        to_datetime = datetime.strptime(toDate, "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc) 
+        from_datetime =  (toDate - timedelta(days = numDays)) 
+        to_datetime = (toDate - timedelta(days = 1))
         
         cred = DefaultAzureCredential( 
             exclude_cli_credential = False,
@@ -79,17 +83,20 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                     avg_cost = float(sum(past_numDays_cost)/numDays) 
 
                     logging.info("Avg Cost: $ {0}".format(round(avg_cost,2)))
-                    
+
                     rgs_cost_dict["resourceGroupCost"].append({
-                        "rgname":  rg.name,
+                        "rgname": rg.name,
+                        "rgteam": "NA",
                         "rgcost": round(avg_cost,2)
                     })
                     if rg.tags is not None and "Offering" in rg.tags.keys():
                         if rg.tags['Offering'] == "SQL Server Migration" or rg.tags['Offering'] == "SQL Migration":
+                            rgs_cost_dict["resourceGroupCost"][-1]["rgteam"] = "SMFP"
                             rgs_cost_dict["smfpTotalCost"] = rgs_cost_dict["smfpTotalCost"] + avg_cost
                         else:
+                            rgs_cost_dict["resourceGroupCost"][-1]["rgteam"] = "v-CSA"
                             rgs_cost_dict["vcsaTotalCost"] = rgs_cost_dict["vcsaTotalCost"] + avg_cost
-        
+                            
                 else:
                     logging.info(f"Cost data not available for the past {numDays} days for RG - {rg.name}")
 
