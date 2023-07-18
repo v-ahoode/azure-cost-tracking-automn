@@ -7,6 +7,7 @@ from azure.mgmt.costmanagement import CostManagementClient
 from azure.mgmt.resource import ResourceManagementClient
 from azure.mgmt.costmanagement.models import (QueryDefinition, ExportType, TimeframeType, QueryTimePeriod, GranularityType, QueryDataset, QueryAggregation, QueryGrouping)
 import json
+import time
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Python HTTP trigger function processed a request.')
@@ -67,12 +68,12 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         rgs_cost_dict["vcsaTotalCost"] = float(0)
         rgs_cost_dict["smfpTotalCost"] = float(0)
 
-
-        for rg in list(resourceGroups):
+        for x,rg in enumerate(list(resourceGroups), start=1):
+            logging.info(f"--------------------------------------{str(x)}----------------------------------------")
+                        
             if rg.managed_by is None:
                 scope_with_rg = '' + scope + str(rg.name)
                 query_result = cost_mgmt_client.query.usage(scope=scope_with_rg, parameters=query_def)
-
                 query_result_dict = query_result.as_dict()
                 rows_of_cost = query_result_dict["rows"]
                 
@@ -96,9 +97,14 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                         else:
                             rgs_cost_dict["resourceGroupCost"][-1]["rgteam"] = "v-CSA"
                             rgs_cost_dict["vcsaTotalCost"] = rgs_cost_dict["vcsaTotalCost"] + avg_cost
-                            
                 else:
                     logging.info(f"Cost data not available for the past {numDays} days for RG - {rg.name}")
+
+            if x in range(1,40,5):
+                logging.info("Request throttled, waiting for 15 secs")
+                time.sleep(15)
+                logging.info("Continuing")
+
 
         rgs_cost_dict["vcsaTotalCost"] = round(rgs_cost_dict["vcsaTotalCost"],2)            
         rgs_cost_dict["smfpTotalCost"] = round(rgs_cost_dict["smfpTotalCost"],2)      
@@ -109,4 +115,4 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
     except Exception as e:
         logging.exception(e)
-        return func.HttpResponse(e,status_code=400)
+        return func.HttpResponse(e,status_code=e.status_code)
