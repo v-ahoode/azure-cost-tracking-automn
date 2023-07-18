@@ -101,8 +101,8 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                     logging.info(f"Cost data not available for the past {numDays} days for RG - {rg.name}")
 
             if x in range(1,40,5):
-                logging.info("Request throttled, waiting for 15 secs")
-                time.sleep(15)
+                logging.info("Request throttled, waiting for 10 secs")
+                time.sleep(10)
                 logging.info("Continuing")
 
 

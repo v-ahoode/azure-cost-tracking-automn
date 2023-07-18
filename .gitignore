@@ -2,6 +2,7 @@
 test.py
 env.py
 email.html
+tagPolicy.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
