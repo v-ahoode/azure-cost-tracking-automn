@@ -27,8 +27,8 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             
         scope = req_body.get('scope')
 
-        from_datetime =  (toDate - timedelta(days = numDays)) 
-        to_datetime = (toDate - timedelta(days = 1))
+        from_datetime =  (toDate - timedelta(days = numDays + 1)) 
+        to_datetime = (toDate - timedelta(days = 2))
         
         cred = DefaultAzureCredential( 
             exclude_cli_credential = False,
@@ -64,12 +64,17 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         resourceGroups = resource_mgmt_client.resource_groups.list()
 
         rgs_cost_dict = {}
+
         rgs_cost_dict["resourceGroupCost"] = list()
-        rgs_cost_dict["vcsaTotalCost"] = float(0)
-        rgs_cost_dict["smfpTotalCost"] = float(0)
+        rgs_cost_dict["smfTotalCost"] = float(0)
+        rgs_cost_dict["lmfTotalCost"] = float(0)
+        rgs_cost_dict["aifTotalCost"] = float(0)
+        rgs_cost_dict["totalCost"] = float(0)
+        rgs_cost_dict["fromDate"] = str(from_datetime.date())
+        rgs_cost_dict["toDate"] = str(to_datetime.date())
 
         for x,rg in enumerate(list(resourceGroups), start=1):
-            logging.info(f"--------------------------------------{str(x)}----------------------------------------")
+            logging.info(f"--------------------------------------{str(x)}--------------------------------------")
                         
             if rg.managed_by is None:
                 scope_with_rg = '' + scope + str(rg.name)
@@ -85,29 +90,40 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
                     logging.info("Avg Cost: $ {0}".format(round(avg_cost,2)))
 
-                    rgs_cost_dict["resourceGroupCost"].append({
-                        "rgname": rg.name,
-                        "rgteam": "NA",
-                        "rgcost": round(avg_cost,2)
-                    })
-                    if rg.tags is not None and "Offering" in rg.tags.keys():
-                        if rg.tags['Offering'] == "SQL Server Migration" or rg.tags['Offering'] == "SQL Migration":
-                            rgs_cost_dict["resourceGroupCost"][-1]["rgteam"] = "SMFP"
-                            rgs_cost_dict["smfpTotalCost"] = rgs_cost_dict["smfpTotalCost"] + avg_cost
-                        else:
-                            rgs_cost_dict["resourceGroupCost"][-1]["rgteam"] = "v-CSA"
-                            rgs_cost_dict["vcsaTotalCost"] = rgs_cost_dict["vcsaTotalCost"] + avg_cost
+                    if rg.tags is not None and "Team" in rg.tags.keys():
+                        rgs_cost_dict["resourceGroupCost"].append({
+                            "rgname": rg.name,
+                            "rgteam": rg.tags.get("Team"),
+                            "rgcost": round(avg_cost,2)
+                        })
+                    else:
+                        rgs_cost_dict["resourceGroupCost"].append({
+                            "rgname": rg.name,
+                            "rgteam": "NA",
+                            "rgcost": round(avg_cost,2)
+                        })
+
+                    if rg.tags is not None and "Team" in rg.tags.keys():
+                        if rg.tags['Team'].lower() == "SQL Migration Factory".lower():
+                            rgs_cost_dict["smfTotalCost"] = rgs_cost_dict["smfTotalCost"] + avg_cost
+                        elif rg.tags['Team'].lower() == "Lakehouse Factory".lower():
+                            rgs_cost_dict["lmfTotalCost"] = rgs_cost_dict["lmfTotalCost"] + avg_cost
+                        elif rg.tags['Team'].lower() == "AI Factory".lower():
+                            rgs_cost_dict["aifTotalCost"] = rgs_cost_dict["aifTotalCost"] + avg_cost
                 else:
-                    logging.info(f"Cost data not available for the past {numDays} days for RG - {rg.name}")
+                    logging.info(f"Cost data not available from {from_datetime.date()} to {to_datetime.date()} for RG - {rg.name}")
+            
+            logging.info(f"--------------------------------------{str(x)}--------------------------------------")
 
             if x in range(1,40,5):
                 logging.info("Request throttled, waiting for 10 secs")
                 time.sleep(10)
                 logging.info("Continuing")
-
-
-        rgs_cost_dict["vcsaTotalCost"] = round(rgs_cost_dict["vcsaTotalCost"],2)            
-        rgs_cost_dict["smfpTotalCost"] = round(rgs_cost_dict["smfpTotalCost"],2)      
+        
+        rgs_cost_dict["smfTotalCost"] = round(rgs_cost_dict["smfTotalCost"],2)            
+        rgs_cost_dict["lmfTotalCost"] = round(rgs_cost_dict["lmfTotalCost"],2)      
+        rgs_cost_dict["aifTotalCost"] = round(rgs_cost_dict["aifTotalCost"],2)      
+        rgs_cost_dict["totalCost"] = round(rgs_cost_dict["smfTotalCost"] + rgs_cost_dict["lmfTotalCost"] + rgs_cost_dict["aifTotalCost"],2)      
 
         rgs_cost_json = json.dumps(rgs_cost_dict)
 
