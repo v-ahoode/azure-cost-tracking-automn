@@ -9,31 +9,279 @@ from azure.mgmt.costmanagement.models import (QueryDefinition, ExportType, Timef
 import json
 import time
 
+def get_cost(scope_with_rg , from_datetime, to_datetime, cost_mgmt_client):
+
+    query_dataset = QueryDataset(
+        granularity=GranularityType("Daily"),                
+        # configuration=QueryDatasetConfiguration(), 
+        aggregation={"totalCost" : QueryAggregation(name="PreTaxCost", function ="Sum")}, 
+        grouping=[QueryGrouping(type="Dimension", name="ResourceGroup")], 
+        # filter = QueryFilter()
+    )
+    
+    query_def = QueryDefinition(
+        type=ExportType("Usage"),
+        timeframe=TimeframeType("Custom"),            
+        time_period=QueryTimePeriod(from_property=from_datetime, to=to_datetime),
+        dataset=query_dataset
+    )
+
+    query_result = cost_mgmt_client.query.usage(scope=scope_with_rg, parameters=query_def)
+    query_result_dict = query_result.as_dict()
+    rows_of_cost = query_result_dict["rows"]
+
+    return rows_of_cost
+
+def get_yesterday_cost(resource_groups, scope, from_datetime, to_datetime, cost_mgmt_client):
+
+    logging.info("-----------------Yesterdays' Cost-----------------")
+
+    yesterday_cost_dict = {}
+
+    yesterday_cost_dict["resourceGroupCost"] = list()
+    yesterday_cost_dict["smfTotalCost"] = float(0)
+    yesterday_cost_dict["lmfTotalCost"] = float(0)
+    yesterday_cost_dict["aifTotalCost"] = float(0)
+    yesterday_cost_dict["totalCost"] = float(0)
+
+    for x,rg in enumerate(resource_groups, start=1):
+        logging.info(f"--------------------------------------{str(x)}--------------------------------------")
+                    
+        if rg.managed_by is None:
+            scope_with_rg = '' + scope + str(rg.name)
+
+            rows_of_cost = get_cost(scope_with_rg, from_datetime, to_datetime, cost_mgmt_client)
+            
+            if(len(rows_of_cost) == 1): 
+                past_numDays_cost = list()
+                for row in rows_of_cost: 
+                    past_numDays_cost.append(row[0])
+                total_cost = float(sum(past_numDays_cost)) 
+
+                logging.info("Total Cost: $ {0}".format(round(total_cost,2)))
+
+                if rg.tags is not None and "Team" in rg.tags.keys():
+                    yesterday_cost_dict["resourceGroupCost"].append({
+                        "rgname": rg.name,
+                        "rgteam": rg.tags.get("Team"),
+                        "rgcost": round(total_cost,2)
+                    })
+                else:
+                    yesterday_cost_dict["resourceGroupCost"].append({
+                        "rgname": rg.name,
+                        "rgteam": "NA",
+                        "rgcost": round(total_cost,2)
+                    })
+
+                if rg.tags is not None and "Team" in rg.tags.keys():
+                    if rg.tags['Team'].lower() == "SQL Migration Factory".lower():
+                        yesterday_cost_dict["smfTotalCost"] = yesterday_cost_dict["smfTotalCost"] + total_cost
+                    elif rg.tags['Team'].lower() == "Lakehouse Factory".lower():
+                        yesterday_cost_dict["lmfTotalCost"] = yesterday_cost_dict["lmfTotalCost"] + total_cost
+                    elif rg.tags['Team'].lower() == "AI Factory".lower():
+                        yesterday_cost_dict["aifTotalCost"] = yesterday_cost_dict["aifTotalCost"] + total_cost
+            else:
+                logging.info(f"Cost data not available from {from_datetime.date()} to {to_datetime.date()} for RG - {rg.name}")
+        
+        logging.info(f"--------------------------------------{str(x)}--------------------------------------")
+
+        if x in range(1,100,5):
+            logging.info("++++++++++ Request throttled, waiting for 10 secs ++++++++++")
+            time.sleep(10)
+            logging.info("++++++++++ Continuing ++++++++++")
+
+    yesterday_cost_dict["smfTotalCost"] = round(yesterday_cost_dict["smfTotalCost"],2)            
+    yesterday_cost_dict["lmfTotalCost"] = round(yesterday_cost_dict["lmfTotalCost"],2)      
+    yesterday_cost_dict["aifTotalCost"] = round(yesterday_cost_dict["aifTotalCost"],2)      
+    yesterday_cost_dict["totalCost"] = round(yesterday_cost_dict["smfTotalCost"] + yesterday_cost_dict["lmfTotalCost"] + yesterday_cost_dict["aifTotalCost"],2)
+    yesterday_cost_dict["fromDate"] = str(from_datetime.date())
+    yesterday_cost_dict["toDate"] = str(to_datetime.date())
+
+    return yesterday_cost_dict
+
+def get_daily_and_weekly_cost(resource_groups, scope, from_datetime, to_datetime, cost_mgmt_client):
+
+    logging.info("-----------------Daily & Weekly Cost-----------------")
+
+    daily_cost_dict = {}
+    daily_cost_dict["resourceGroupCost"] = list()
+    daily_cost_dict["smfTotalCost"] = float(0)
+    daily_cost_dict["lmfTotalCost"] = float(0)
+    daily_cost_dict["aifTotalCost"] = float(0)
+    daily_cost_dict["totalCost"] = float(0)
+
+    weekly_cost_dict = {}
+    weekly_cost_dict["resourceGroupCost"] = list()
+    weekly_cost_dict["smfTotalCost"] = float(0)
+    weekly_cost_dict["lmfTotalCost"] = float(0)
+    weekly_cost_dict["aifTotalCost"] = float(0)
+    weekly_cost_dict["totalCost"] = float(0)
+
+    for x,rg in enumerate(resource_groups, start=1):
+        logging.info(f"--------------------------------------{str(x)}--------------------------------------")
+                    
+        if rg.managed_by is None:
+            scope_with_rg = '' + scope + str(rg.name)
+
+            rows_of_cost = get_cost(scope_with_rg, from_datetime, to_datetime, cost_mgmt_client)
+            
+            if(len(rows_of_cost) == 7): 
+                past_numDays_cost = list()
+                for row in rows_of_cost: 
+                    past_numDays_cost.append(row[0])
+                avg_cost = float(sum(past_numDays_cost)/7) 
+                total_cost = float(sum(past_numDays_cost))
+
+                logging.info("Avg Cost: $ {0}".format(round(avg_cost,2)))
+                logging.info("Total Cost: $ {0}".format(round(total_cost,2)))
+
+                if rg.tags is not None and "Team" in rg.tags.keys():
+                    daily_cost_dict["resourceGroupCost"].append({
+                        "rgname": rg.name,
+                        "rgteam": rg.tags.get("Team"),
+                        "rgcost": round(avg_cost,2)
+                    })
+                    weekly_cost_dict["resourceGroupCost"].append({
+                        "rgname": rg.name,
+                        "rgteam": rg.tags.get("Team"),
+                        "rgcost": round(total_cost,2)
+                    })
+                else:
+                    daily_cost_dict["resourceGroupCost"].append({
+                        "rgname": rg.name,
+                        "rgteam": "NA",
+                        "rgcost": round(avg_cost,2)
+                    })
+                    weekly_cost_dict["resourceGroupCost"].append({
+                        "rgname": rg.name,
+                        "rgteam": "NA",
+                        "rgcost": round(total_cost,2)
+                    })
+
+                if rg.tags is not None and "Team" in rg.tags.keys():
+                    if rg.tags['Team'].lower() == "SQL Migration Factory".lower():
+                        daily_cost_dict["smfTotalCost"] = daily_cost_dict["smfTotalCost"] + avg_cost
+                        weekly_cost_dict["smfTotalCost"] = weekly_cost_dict["smfTotalCost"] + total_cost
+                    elif rg.tags['Team'].lower() == "Lakehouse Factory".lower():
+                        daily_cost_dict["lmfTotalCost"] = daily_cost_dict["lmfTotalCost"] + avg_cost
+                        weekly_cost_dict["lmfTotalCost"] = weekly_cost_dict["lmfTotalCost"] + total_cost
+                    elif rg.tags['Team'].lower() == "AI Factory".lower():
+                        daily_cost_dict["aifTotalCost"] = daily_cost_dict["aifTotalCost"] + avg_cost
+                        weekly_cost_dict["aifTotalCost"] = weekly_cost_dict["aifTotalCost"] + total_cost
+            else:
+                logging.info(f"Cost data not available from {from_datetime.date()} to {to_datetime.date()} for RG - {rg.name}")
+        
+        logging.info(f"--------------------------------------{str(x)}--------------------------------------")
+
+        if x in range(1,100,5):
+            logging.info("++++++++++ Request throttled, waiting for 10 secs ++++++++++")
+            time.sleep(10)
+            logging.info("++++++++++ Continuing ++++++++++")
+
+    daily_cost_dict["smfTotalCost"] = round(daily_cost_dict["smfTotalCost"],2)            
+    daily_cost_dict["lmfTotalCost"] = round(daily_cost_dict["lmfTotalCost"],2)      
+    daily_cost_dict["aifTotalCost"] = round(daily_cost_dict["aifTotalCost"],2)      
+    daily_cost_dict["totalCost"] = round(daily_cost_dict["smfTotalCost"] + daily_cost_dict["lmfTotalCost"] + daily_cost_dict["aifTotalCost"],2)
+    daily_cost_dict["fromDate"] = str(from_datetime.date())
+    daily_cost_dict["toDate"] = str(to_datetime.date())
+
+    weekly_cost_dict["smfTotalCost"] = round(weekly_cost_dict["smfTotalCost"],2)            
+    weekly_cost_dict["lmfTotalCost"] = round(weekly_cost_dict["lmfTotalCost"],2)      
+    weekly_cost_dict["aifTotalCost"] = round(weekly_cost_dict["aifTotalCost"],2)      
+    weekly_cost_dict["totalCost"] = round(weekly_cost_dict["smfTotalCost"] + weekly_cost_dict["lmfTotalCost"] + weekly_cost_dict["aifTotalCost"],2)
+    weekly_cost_dict["fromDate"] = str(from_datetime.date())
+    weekly_cost_dict["toDate"] = str(to_datetime.date())
+
+    return daily_cost_dict, weekly_cost_dict
+
+def get_monthly_cost(resource_groups, scope, from_datetime, to_datetime, cost_mgmt_client):
+
+    logging.info("-----------------Monthly Cost-----------------")
+
+    monthly_cost_dict = {}
+
+    monthly_cost_dict["resourceGroupCost"] = list()
+    monthly_cost_dict["smfTotalCost"] = float(0)
+    monthly_cost_dict["lmfTotalCost"] = float(0)
+    monthly_cost_dict["aifTotalCost"] = float(0)
+    monthly_cost_dict["totalCost"] = float(0)
+
+    for x,rg in enumerate(resource_groups, start=1):
+        logging.info(f"--------------------------------------{str(x)}--------------------------------------")
+                    
+        if rg.managed_by is None:
+            scope_with_rg = '' + scope + str(rg.name)
+
+            rows_of_cost = get_cost(scope_with_rg, from_datetime, to_datetime, cost_mgmt_client)
+            
+            if(len(rows_of_cost) >= 30 and len(rows_of_cost) <=31): 
+                past_numDays_cost = list()
+                for row in rows_of_cost: 
+                    past_numDays_cost.append(row[0])
+                total_cost = float(sum(past_numDays_cost)) 
+
+                logging.info("Total Cost: $ {0}".format(round(total_cost,2)))
+
+                if rg.tags is not None and "Team" in rg.tags.keys():
+                    monthly_cost_dict["resourceGroupCost"].append({
+                        "rgname": rg.name,
+                        "rgteam": rg.tags.get("Team"),
+                        "rgcost": round(total_cost,2)
+                    })
+                else:
+                    monthly_cost_dict["resourceGroupCost"].append({
+                        "rgname": rg.name,
+                        "rgteam": "NA",
+                        "rgcost": round(total_cost,2)
+                    })
+
+                if rg.tags is not None and "Team" in rg.tags.keys():
+                    if rg.tags['Team'].lower() == "SQL Migration Factory".lower():
+                        monthly_cost_dict["smfTotalCost"] = monthly_cost_dict["smfTotalCost"] + total_cost
+                    elif rg.tags['Team'].lower() == "Lakehouse Factory".lower():
+                        monthly_cost_dict["lmfTotalCost"] = monthly_cost_dict["lmfTotalCost"] + total_cost
+                    elif rg.tags['Team'].lower() == "AI Factory".lower():
+                        monthly_cost_dict["aifTotalCost"] = monthly_cost_dict["aifTotalCost"] + total_cost
+            else:
+                logging.info(f"Cost data not available from {from_datetime.date()} to {to_datetime.date()} for RG - {rg.name}")
+        
+        logging.info(f"--------------------------------------{str(x)}--------------------------------------")
+
+        if x in range(1,100,5):
+            logging.info("++++++++++ Request throttled, waiting for 10 secs ++++++++++")
+            time.sleep(10)
+            logging.info("++++++++++ Continuing ++++++++++")
+
+    monthly_cost_dict["smfTotalCost"] = round(monthly_cost_dict["smfTotalCost"],2)            
+    monthly_cost_dict["lmfTotalCost"] = round(monthly_cost_dict["lmfTotalCost"],2)      
+    monthly_cost_dict["aifTotalCost"] = round(monthly_cost_dict["aifTotalCost"],2)      
+    monthly_cost_dict["totalCost"] = round(monthly_cost_dict["smfTotalCost"] + monthly_cost_dict["lmfTotalCost"] + monthly_cost_dict["aifTotalCost"],2)
+    monthly_cost_dict["fromDate"] = str(from_datetime.date())
+    monthly_cost_dict["toDate"] = str(to_datetime.date())
+
+    return monthly_cost_dict
+
 def main(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Python HTTP trigger function processed a request.')
 
     try:
         req_body = req.get_json() 
-        
-        if req_body.get('numDays') is None:
-            numDays = 7
-        else:
-            numDays = int(req_body.get('numDays'))
 
-        if req_body.get('toDate') is None:
-            toDate = datetime.strptime(datetime.utcnow().strftime("%Y-%m-%d %H:%M"), "%Y-%m-%d %H:%M").replace(tzinfo = timezone.utc)
-        else:
-            toDate = datetime.strptime(req_body.get('toDate'), "%Y-%m-%d %H:%M").replace(tzinfo = timezone.utc)
-            
         scope = req_body.get('scope')
-
-        from_datetime =  (toDate - timedelta(days = numDays + 1)) 
-        to_datetime = (toDate - timedelta(days = 2))
         
+        toDate = datetime.strptime(datetime.utcnow().strftime("%Y-%m-%d 0:0"), "%Y-%m-%d 0:0").replace(tzinfo = timezone.utc)
+
+        yesterday_from_datetime = (toDate - timedelta(days=1)) 
+        yesterday_to_datetime = (toDate - timedelta(minutes=1)) 
+
+        daily_and_weekly_from_datetime =  (toDate - timedelta(days = 7 + 1)) 
+        daily_and_weekly_to_datetime = (toDate - timedelta(days = 1, minutes=1))
+
+        monthly_from_datetime =  (toDate - timedelta(days = 30 + 1)) 
+        monthly_to_datetime = (toDate - timedelta(days = 1, minutes=1))
+
         cred = DefaultAzureCredential( 
-            exclude_cli_credential = False,
             exclude_environment_credential = True,
-            exclude_managed_identity_credential = False,
             exclude_powershell_credential = True,
             exclude_visual_studio_code_credential = True,
             exclude_shared_token_cache_credential = True,
@@ -46,88 +294,25 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
         resource_mgmt_client = ResourceManagementClient(cred, subscription_id)
 
-        query_dataset = QueryDataset(
-            granularity=GranularityType("Daily"),                
-            # configuration=QueryDatasetConfiguration(), 
-            aggregation={"totalCost" : QueryAggregation(name="PreTaxCost", function ="Sum")}, 
-            grouping=[QueryGrouping(type="Dimension", name="ResourceGroup")], 
-            # filter = QueryFilter()
-        )
-        
-        query_def = QueryDefinition(
-            type=ExportType("Usage"),
-            timeframe=TimeframeType("Custom"),            
-            time_period=QueryTimePeriod(from_property=from_datetime, to=to_datetime),
-            dataset=query_dataset
-        )
-
-        resourceGroups = resource_mgmt_client.resource_groups.list()
+        resource_groups = resource_mgmt_client.resource_groups.list()
+        resource_groups_list = list(resource_groups)
 
         rgs_cost_dict = {}
 
-        rgs_cost_dict["resourceGroupCost"] = list()
-        rgs_cost_dict["smfTotalCost"] = float(0)
-        rgs_cost_dict["lmfTotalCost"] = float(0)
-        rgs_cost_dict["aifTotalCost"] = float(0)
-        rgs_cost_dict["totalCost"] = float(0)
-        rgs_cost_dict["fromDate"] = str(from_datetime.date())
-        rgs_cost_dict["toDate"] = str(to_datetime.date())
+        rgs_cost_dict["yesterday"] = {}
+        rgs_cost_dict["daily"] = {}
+        rgs_cost_dict["weekly"] = {}
+        rgs_cost_dict["monthly"] = {}
 
-        for x,rg in enumerate(list(resourceGroups), start=1):
-            logging.info(f"--------------------------------------{str(x)}--------------------------------------")
-                        
-            if rg.managed_by is None:
-                scope_with_rg = '' + scope + str(rg.name)
-                query_result = cost_mgmt_client.query.usage(scope=scope_with_rg, parameters=query_def)
-                query_result_dict = query_result.as_dict()
-                rows_of_cost = query_result_dict["rows"]
-                
-                if(len(rows_of_cost) == numDays): 
-                    past_numDays_cost = list()
-                    for row in rows_of_cost: 
-                        past_numDays_cost.append(row[0])
-                    avg_cost = float(sum(past_numDays_cost)/numDays) 
+        rgs_cost_dict["yesterday"] = get_yesterday_cost(resource_groups_list, scope, yesterday_from_datetime, yesterday_to_datetime, cost_mgmt_client)
 
-                    logging.info("Avg Cost: $ {0}".format(round(avg_cost,2)))
-
-                    if rg.tags is not None and "Team" in rg.tags.keys():
-                        rgs_cost_dict["resourceGroupCost"].append({
-                            "rgname": rg.name,
-                            "rgteam": rg.tags.get("Team"),
-                            "rgcost": round(avg_cost,2)
-                        })
-                    else:
-                        rgs_cost_dict["resourceGroupCost"].append({
-                            "rgname": rg.name,
-                            "rgteam": "NA",
-                            "rgcost": round(avg_cost,2)
-                        })
-
-                    if rg.tags is not None and "Team" in rg.tags.keys():
-                        if rg.tags['Team'].lower() == "SQL Migration Factory".lower():
-                            rgs_cost_dict["smfTotalCost"] = rgs_cost_dict["smfTotalCost"] + avg_cost
-                        elif rg.tags['Team'].lower() == "Lakehouse Factory".lower():
-                            rgs_cost_dict["lmfTotalCost"] = rgs_cost_dict["lmfTotalCost"] + avg_cost
-                        elif rg.tags['Team'].lower() == "AI Factory".lower():
-                            rgs_cost_dict["aifTotalCost"] = rgs_cost_dict["aifTotalCost"] + avg_cost
-                else:
-                    logging.info(f"Cost data not available from {from_datetime.date()} to {to_datetime.date()} for RG - {rg.name}")
-            
-            logging.info(f"--------------------------------------{str(x)}--------------------------------------")
-
-            if x in range(1,40,5):
-                logging.info("Request throttled, waiting for 10 secs")
-                time.sleep(10)
-                logging.info("Continuing")
+        rgs_cost_dict["daily"], rgs_cost_dict["weekly"] = get_daily_and_weekly_cost(resource_groups_list, scope, daily_and_weekly_from_datetime, daily_and_weekly_to_datetime, cost_mgmt_client)
         
-        rgs_cost_dict["smfTotalCost"] = round(rgs_cost_dict["smfTotalCost"],2)            
-        rgs_cost_dict["lmfTotalCost"] = round(rgs_cost_dict["lmfTotalCost"],2)      
-        rgs_cost_dict["aifTotalCost"] = round(rgs_cost_dict["aifTotalCost"],2)      
-        rgs_cost_dict["totalCost"] = round(rgs_cost_dict["smfTotalCost"] + rgs_cost_dict["lmfTotalCost"] + rgs_cost_dict["aifTotalCost"],2)      
-
+        rgs_cost_dict["monthly"] = get_monthly_cost(resource_groups_list, scope, monthly_from_datetime, monthly_to_datetime, cost_mgmt_client)
+        
         rgs_cost_json = json.dumps(rgs_cost_dict)
 
-        return func.HttpResponse(rgs_cost_json,status_code=200)         
+        return func.HttpResponse(rgs_cost_json,status_code=200) 
 
     except Exception as e:
         logging.exception(e)
