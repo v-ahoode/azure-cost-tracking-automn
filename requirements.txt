@@ -6,3 +6,4 @@ azure-functions
 azure-mgmt-costmanagement
 azure-identity
 azure-mgmt-resource>=18.0.0
+azure-functions-durable

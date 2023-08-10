@@ -3,6 +3,7 @@ test.py
 env.py
 email.html
 tagPolicy.json
+JSON Schema.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
