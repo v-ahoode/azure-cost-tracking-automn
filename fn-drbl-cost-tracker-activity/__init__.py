@@ -259,15 +259,6 @@ def main(name: str) -> dict:
         
         toDate = datetime.strptime(datetime.utcnow().strftime("%Y-%m-%d 0:0"), "%Y-%m-%d 0:0").replace(tzinfo = timezone.utc)
 
-        yesterday_from_datetime = (toDate - timedelta(days=1)) 
-        yesterday_to_datetime = (toDate - timedelta(minutes=1)) 
-
-        daily_and_weekly_from_datetime =  (toDate - timedelta(days = 7 + 1)) 
-        daily_and_weekly_to_datetime = (toDate - timedelta(days = 1, minutes=1))
-
-        monthly_from_datetime =  (toDate - timedelta(days = 30 + 1)) 
-        monthly_to_datetime = (toDate - timedelta(days = 1, minutes=1))
-
         from_datetime =  (toDate - timedelta(days = 30 + 1)) 
         to_datetime = (toDate - timedelta(minutes=1))
 
