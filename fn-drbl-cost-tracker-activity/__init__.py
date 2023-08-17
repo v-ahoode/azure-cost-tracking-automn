@@ -11,26 +11,30 @@ import time
 
 def get_cost(scope_with_rg , from_datetime, to_datetime, cost_mgmt_client):
 
-    query_dataset = QueryDataset(
-        granularity=GranularityType("Daily"),                
-        # configuration=QueryDatasetConfiguration(), 
-        aggregation={"totalCost" : QueryAggregation(name="PreTaxCost", function ="Sum")}, 
-        grouping=[QueryGrouping(type="Dimension", name="ResourceGroup")], 
-        # filter = QueryFilter()
-    )
-    
-    query_def = QueryDefinition(
-        type=ExportType("Usage"),
-        timeframe=TimeframeType("Custom"),            
-        time_period=QueryTimePeriod(from_property=from_datetime, to=to_datetime),
-        dataset=query_dataset
-    )
+    try:
+        query_dataset = QueryDataset(
+            granularity=GranularityType("Daily"),                
+            # configuration=QueryDatasetConfiguration(), 
+            aggregation={"totalCost" : QueryAggregation(name="PreTaxCost", function ="Sum")}, 
+            grouping=[QueryGrouping(type="Dimension", name="ResourceGroup")], 
+            # filter = QueryFilter()
+        )
+        
+        query_def = QueryDefinition(
+            type=ExportType("Usage"),
+            timeframe=TimeframeType("Custom"),            
+            time_period=QueryTimePeriod(from_property=from_datetime, to=to_datetime),
+            dataset=query_dataset
+        )
 
-    query_result = cost_mgmt_client.query.usage(scope=scope_with_rg, parameters=query_def)
-    query_result_dict = query_result.as_dict()
-    rows_of_cost = query_result_dict["rows"]
+        query_result = cost_mgmt_client.query.usage(scope=scope_with_rg, parameters=query_def)
+        query_result_dict = query_result.as_dict()
+        rows_of_cost = query_result_dict["rows"]
 
-    return rows_of_cost
+        return rows_of_cost
+    except Exception as e:
+        logging.exception("[ERROR]: Something went wrong while getting the cost ", e)
+        return []
 
 def get_rgs_cost(resource_groups, scope, from_datetime, to_datetime, cost_mgmt_client):
 
@@ -64,144 +68,147 @@ def get_rgs_cost(resource_groups, scope, from_datetime, to_datetime, cost_mgmt_c
     monthly_cost_dict["aifTotalCost"] = float(0)
     monthly_cost_dict["totalCost"] = float(0)
 
-    for x,rg in enumerate(resource_groups, start=1):
-        logging.info(f"--------------------------------------{str(x)}--------------------------------------")
-                    
-        if rg.managed_by is None:
-            scope_with_rg = '' + scope + str(rg.name)
+    try:
+        for x,rg in enumerate(resource_groups, start=1):
+            logging.info(f"--------------------------------------{str(x)}--------------------------------------")
+                        
+            if rg.managed_by is None:
+                scope_with_rg = '' + scope + str(rg.name)
 
-            rows_of_cost = get_cost(scope_with_rg, from_datetime, to_datetime, cost_mgmt_client)
+                rows_of_cost = get_cost(scope_with_rg, from_datetime, to_datetime, cost_mgmt_client)
 
-            logging.info(len(rows_of_cost))
+                logging.info(len(rows_of_cost))
 
-            yesterday_row_of_cost = list()
-            daily_weekly_rows_of_cost = list()
-            monthly_rows_of_cost = list()
+                yesterday_row_of_cost = list()
+                daily_weekly_rows_of_cost = list()
+                monthly_rows_of_cost = list()
 
-            if (len(rows_of_cost) <= 31 and len(rows_of_cost) > 0):
-                logging.info("Yesterday cost present")
-                yesterday_row_of_cost = [rows_of_cost[-1]]
-            if (len(rows_of_cost) >= 8):
-                logging.info("Daily & Weekly cost present")
-                daily_weekly_rows_of_cost = rows_of_cost[len(rows_of_cost)-8: len(rows_of_cost)-1]
-            if (len(rows_of_cost) == 31):
-                logging.info("Monthly cost present")
-                monthly_rows_of_cost = rows_of_cost[0: len(rows_of_cost)-1]
+                if (len(rows_of_cost) <= 31 and len(rows_of_cost) > 0):
+                    logging.info("[INFO]: Yesterday cost present")
+                    yesterday_row_of_cost = [rows_of_cost[-1]]
+                if (len(rows_of_cost) >= 8):
+                    logging.info("[INFO]: Daily & Weekly cost present")
+                    daily_weekly_rows_of_cost = rows_of_cost[len(rows_of_cost)-8: len(rows_of_cost)-1]
+                if (len(rows_of_cost) == 31):
+                    logging.info("[INFO]: Monthly cost present")
+                    monthly_rows_of_cost = rows_of_cost[0: len(rows_of_cost)-1]
 
-            if(len(yesterday_row_of_cost) == 1): 
-                past_numDays_cost = list()
-                for row in yesterday_row_of_cost: 
-                    past_numDays_cost.append(row[0])
-                total_cost = float(sum(past_numDays_cost))
+                if(len(yesterday_row_of_cost) == 1): 
+                    past_numDays_cost = list()
+                    for row in yesterday_row_of_cost: 
+                        past_numDays_cost.append(row[0])
+                    total_cost = float(sum(past_numDays_cost))
 
-                logging.info("Yesterdays' Total Cost: $ {0}".format(round(total_cost,2)))
+                    logging.info("[INFO]: Yesterdays' Total Cost: $ {0}".format(round(total_cost,2)))
 
-                if rg.tags is not None and "Team" in rg.tags.keys():
-                    yesterday_cost_dict["resourceGroupCost"].append({
-                        "rgname": rg.name,
-                        "rgteam": rg.tags.get("Team"),
-                        "rgcost": round(total_cost,2)
-                    })
+                    if rg.tags is not None and "Team" in rg.tags.keys():
+                        yesterday_cost_dict["resourceGroupCost"].append({
+                            "rgname": rg.name,
+                            "rgteam": rg.tags.get("Team"),
+                            "rgcost": round(total_cost,2)
+                        })
+                    else:
+                        yesterday_cost_dict["resourceGroupCost"].append({
+                            "rgname": rg.name,
+                            "rgteam": "NA",
+                            "rgcost": round(total_cost,2)
+                        })
+
+                    if rg.tags is not None and "Team" in rg.tags.keys():
+                        if rg.tags['Team'].lower() == "SQL Migration Factory".lower():
+                            yesterday_cost_dict["smfTotalCost"] = yesterday_cost_dict["smfTotalCost"] + total_cost
+                        elif rg.tags['Team'].lower() == "Lakehouse Factory".lower():
+                            yesterday_cost_dict["lmfTotalCost"] = yesterday_cost_dict["lmfTotalCost"] + total_cost
+                        elif rg.tags['Team'].lower() == "AI Factory".lower():
+                            yesterday_cost_dict["aifTotalCost"] = yesterday_cost_dict["aifTotalCost"] + total_cost
                 else:
-                    yesterday_cost_dict["resourceGroupCost"].append({
-                        "rgname": rg.name,
-                        "rgteam": "NA",
-                        "rgcost": round(total_cost,2)
-                    })
+                    logging.info(f"[INFO]: Yesterdays' cost data not available from {from_datetime.date()} to {to_datetime.date()} for RG - {rg.name}")
+                
+                if(len(daily_weekly_rows_of_cost) == 7): 
+                    past_numDays_cost = list()
+                    for row in daily_weekly_rows_of_cost: 
+                        past_numDays_cost.append(row[0])
+                    avg_cost = float(sum(past_numDays_cost)/7) 
+                    total_cost = float(sum(past_numDays_cost))
 
-                if rg.tags is not None and "Team" in rg.tags.keys():
-                    if rg.tags['Team'].lower() == "SQL Migration Factory".lower():
-                        yesterday_cost_dict["smfTotalCost"] = yesterday_cost_dict["smfTotalCost"] + total_cost
-                    elif rg.tags['Team'].lower() == "Lakehouse Factory".lower():
-                        yesterday_cost_dict["lmfTotalCost"] = yesterday_cost_dict["lmfTotalCost"] + total_cost
-                    elif rg.tags['Team'].lower() == "AI Factory".lower():
-                        yesterday_cost_dict["aifTotalCost"] = yesterday_cost_dict["aifTotalCost"] + total_cost
-            else:
-                logging.info(f"Yesterdays' cost data not available from {from_datetime.date()} to {to_datetime.date()} for RG - {rg.name}")
-            
-            if(len(daily_weekly_rows_of_cost) == 7): 
-                past_numDays_cost = list()
-                for row in daily_weekly_rows_of_cost: 
-                    past_numDays_cost.append(row[0])
-                avg_cost = float(sum(past_numDays_cost)/7) 
-                total_cost = float(sum(past_numDays_cost))
+                    logging.info("[INFO]: Daily Avg Cost: $ {0}".format(round(avg_cost,2)))
+                    logging.info("[INFO]: Weekly Total Cost: $ {0}".format(round(total_cost,2)))
 
-                logging.info("Daily Avg Cost: $ {0}".format(round(avg_cost,2)))
-                logging.info("Weekly Total Cost: $ {0}".format(round(total_cost,2)))
+                    if rg.tags is not None and "Team" in rg.tags.keys():
+                        daily_cost_dict["resourceGroupCost"].append({
+                            "rgname": rg.name,
+                            "rgteam": rg.tags.get("Team"),
+                            "rgcost": round(avg_cost,2)
+                        })
+                        weekly_cost_dict["resourceGroupCost"].append({
+                            "rgname": rg.name,
+                            "rgteam": rg.tags.get("Team"),
+                            "rgcost": round(total_cost,2)
+                        })
+                    else:
+                        daily_cost_dict["resourceGroupCost"].append({
+                            "rgname": rg.name,
+                            "rgteam": "NA",
+                            "rgcost": round(avg_cost,2)
+                        })
+                        weekly_cost_dict["resourceGroupCost"].append({
+                            "rgname": rg.name,
+                            "rgteam": "NA",
+                            "rgcost": round(total_cost,2)
+                        })
 
-                if rg.tags is not None and "Team" in rg.tags.keys():
-                    daily_cost_dict["resourceGroupCost"].append({
-                        "rgname": rg.name,
-                        "rgteam": rg.tags.get("Team"),
-                        "rgcost": round(avg_cost,2)
-                    })
-                    weekly_cost_dict["resourceGroupCost"].append({
-                        "rgname": rg.name,
-                        "rgteam": rg.tags.get("Team"),
-                        "rgcost": round(total_cost,2)
-                    })
+                    if rg.tags is not None and "Team" in rg.tags.keys():
+                        if rg.tags['Team'].lower() == "SQL Migration Factory".lower():
+                            daily_cost_dict["smfTotalCost"] = daily_cost_dict["smfTotalCost"] + avg_cost
+                            weekly_cost_dict["smfTotalCost"] = weekly_cost_dict["smfTotalCost"] + total_cost
+                        elif rg.tags['Team'].lower() == "Lakehouse Factory".lower():
+                            daily_cost_dict["lmfTotalCost"] = daily_cost_dict["lmfTotalCost"] + avg_cost
+                            weekly_cost_dict["lmfTotalCost"] = weekly_cost_dict["lmfTotalCost"] + total_cost
+                        elif rg.tags['Team'].lower() == "AI Factory".lower():
+                            daily_cost_dict["aifTotalCost"] = daily_cost_dict["aifTotalCost"] + avg_cost
+                            weekly_cost_dict["aifTotalCost"] = weekly_cost_dict["aifTotalCost"] + total_cost
                 else:
-                    daily_cost_dict["resourceGroupCost"].append({
-                        "rgname": rg.name,
-                        "rgteam": "NA",
-                        "rgcost": round(avg_cost,2)
-                    })
-                    weekly_cost_dict["resourceGroupCost"].append({
-                        "rgname": rg.name,
-                        "rgteam": "NA",
-                        "rgcost": round(total_cost,2)
-                    })
+                    logging.info(f"[INFO]: Daily and Weekly cost data not available from {from_datetime.date()} to {to_datetime.date()} for RG - {rg.name}")
 
-                if rg.tags is not None and "Team" in rg.tags.keys():
-                    if rg.tags['Team'].lower() == "SQL Migration Factory".lower():
-                        daily_cost_dict["smfTotalCost"] = daily_cost_dict["smfTotalCost"] + avg_cost
-                        weekly_cost_dict["smfTotalCost"] = weekly_cost_dict["smfTotalCost"] + total_cost
-                    elif rg.tags['Team'].lower() == "Lakehouse Factory".lower():
-                        daily_cost_dict["lmfTotalCost"] = daily_cost_dict["lmfTotalCost"] + avg_cost
-                        weekly_cost_dict["lmfTotalCost"] = weekly_cost_dict["lmfTotalCost"] + total_cost
-                    elif rg.tags['Team'].lower() == "AI Factory".lower():
-                        daily_cost_dict["aifTotalCost"] = daily_cost_dict["aifTotalCost"] + avg_cost
-                        weekly_cost_dict["aifTotalCost"] = weekly_cost_dict["aifTotalCost"] + total_cost
-            else:
-                logging.info(f"Daily and Weekly cost data not available from {from_datetime.date()} to {to_datetime.date()} for RG - {rg.name}")
+                if(len(monthly_rows_of_cost) == 30): 
+                    past_numDays_cost = list()
+                    for row in monthly_rows_of_cost: 
+                        past_numDays_cost.append(row[0])
+                    total_cost = float(sum(past_numDays_cost))
 
-            if(len(monthly_rows_of_cost) == 30): 
-                past_numDays_cost = list()
-                for row in monthly_rows_of_cost: 
-                    past_numDays_cost.append(row[0])
-                total_cost = float(sum(past_numDays_cost))
+                    logging.info("[INFO]: Monthly Total Cost: $ {0}".format(round(total_cost,2)))
 
-                logging.info("Monthly Total Cost: $ {0}".format(round(total_cost,2)))
+                    if rg.tags is not None and "Team" in rg.tags.keys():
+                        monthly_cost_dict["resourceGroupCost"].append({
+                            "rgname": rg.name,
+                            "rgteam": rg.tags.get("Team"),
+                            "rgcost": round(total_cost,2)
+                        })
+                    else:
+                        monthly_cost_dict["resourceGroupCost"].append({
+                            "rgname": rg.name,
+                            "rgteam": "NA",
+                            "rgcost": round(total_cost,2)
+                        })
 
-                if rg.tags is not None and "Team" in rg.tags.keys():
-                    monthly_cost_dict["resourceGroupCost"].append({
-                        "rgname": rg.name,
-                        "rgteam": rg.tags.get("Team"),
-                        "rgcost": round(total_cost,2)
-                    })
+                    if rg.tags is not None and "Team" in rg.tags.keys():
+                        if rg.tags['Team'].lower() == "SQL Migration Factory".lower():
+                            monthly_cost_dict["smfTotalCost"] = monthly_cost_dict["smfTotalCost"] + total_cost
+                        elif rg.tags['Team'].lower() == "Lakehouse Factory".lower():
+                            monthly_cost_dict["lmfTotalCost"] = monthly_cost_dict["lmfTotalCost"] + total_cost
+                        elif rg.tags['Team'].lower() == "AI Factory".lower():
+                            monthly_cost_dict["aifTotalCost"] = monthly_cost_dict["aifTotalCost"] + total_cost
                 else:
-                    monthly_cost_dict["resourceGroupCost"].append({
-                        "rgname": rg.name,
-                        "rgteam": "NA",
-                        "rgcost": round(total_cost,2)
-                    })
+                    logging.info(f"[INFO]: Monthly cost data not available from {from_datetime.date()} to {to_datetime.date()} for RG - {rg.name}")
 
-                if rg.tags is not None and "Team" in rg.tags.keys():
-                    if rg.tags['Team'].lower() == "SQL Migration Factory".lower():
-                        monthly_cost_dict["smfTotalCost"] = monthly_cost_dict["smfTotalCost"] + total_cost
-                    elif rg.tags['Team'].lower() == "Lakehouse Factory".lower():
-                        monthly_cost_dict["lmfTotalCost"] = monthly_cost_dict["lmfTotalCost"] + total_cost
-                    elif rg.tags['Team'].lower() == "AI Factory".lower():
-                        monthly_cost_dict["aifTotalCost"] = monthly_cost_dict["aifTotalCost"] + total_cost
-            else:
-                logging.info(f"Monthly cost data not available from {from_datetime.date()} to {to_datetime.date()} for RG - {rg.name}")
+            logging.info(f"--------------------------------------{str(x)}--------------------------------------")
 
-        logging.info(f"--------------------------------------{str(x)}--------------------------------------")
-
-        if x in range(1,100,5):
-            logging.info("++++++++++ Request throttled, waiting for 10 secs ++++++++++")
-            time.sleep(10)
-            logging.info("++++++++++ Continuing ++++++++++")
+            if x in range(1,100,5):
+                logging.info("++++++++++ Request throttled, waiting for 10 secs ++++++++++")
+                time.sleep(10)
+                logging.info("++++++++++ Continuing ++++++++++")
+    except Exception as e:
+        logging.exception("[ERROR]: Something went wrong while calculating the cost", e)
 
     yesterday_cost_dict["smfTotalCost"] = round(yesterday_cost_dict["smfTotalCost"],2)            
     yesterday_cost_dict["lmfTotalCost"] = round(yesterday_cost_dict["lmfTotalCost"],2)      
@@ -296,5 +303,5 @@ def main(name: str) -> dict:
         return rgs_cost_json
 
     except Exception as e:
-        logging.exception(e)
+        logging.exception("[ERROR]: Something went wrong in the activity function ", e)
         return e

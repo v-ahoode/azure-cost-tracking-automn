@@ -11,6 +11,6 @@ def orchestrator_function(context: df.DurableOrchestrationContext):
         return rgs_cost
     except Exception as e:
         logging.exception(e)
-        return "Error"
+        return "[ERROR]: Something went wrong in the orchestrator function"
 
 main = df.Orchestrator.create(orchestrator_function)
