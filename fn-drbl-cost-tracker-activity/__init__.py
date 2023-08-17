@@ -243,10 +243,10 @@ def get_estimation(monthly_cost_dict):
     estimation_cost_dict["aifTotalCost"] = float(0)
     estimation_cost_dict["totalCost"] = float(0)
 
-    estimation_cost_dict["smfTotalCost"] = monthly_cost_dict["smfTotalCost"] * 12
-    estimation_cost_dict["lmfTotalCost"] = monthly_cost_dict["lmfTotalCost"] * 12
-    estimation_cost_dict["aifTotalCost"] = monthly_cost_dict["aifTotalCost"] * 12
-    estimation_cost_dict["totalCost"] = monthly_cost_dict["totalCost"] * 12
+    estimation_cost_dict["smfTotalCost"] = round(monthly_cost_dict["smfTotalCost"] * 12, 2)
+    estimation_cost_dict["lmfTotalCost"] = round(monthly_cost_dict["lmfTotalCost"] * 12, 2)
+    estimation_cost_dict["aifTotalCost"] = round(monthly_cost_dict["aifTotalCost"] * 12, 2)
+    estimation_cost_dict["totalCost"] = round(monthly_cost_dict["totalCost"] * 12, 2)
 
     return estimation_cost_dict
 
