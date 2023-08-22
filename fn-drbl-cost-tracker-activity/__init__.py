@@ -33,7 +33,8 @@ def get_cost(scope_with_rg , from_datetime, to_datetime, cost_mgmt_client):
 
         return rows_of_cost
     except Exception as e:
-        logging.exception("[ERROR]: Something went wrong while getting the cost ", e)
+        logging.exception("[ERROR]: Something went wrong while getting the cost")
+        logging.exception(e)
         return []
 
 def get_rgs_cost(resource_groups, scope, from_datetime, to_datetime, cost_mgmt_client):
@@ -208,7 +209,8 @@ def get_rgs_cost(resource_groups, scope, from_datetime, to_datetime, cost_mgmt_c
                 time.sleep(10)
                 logging.info("++++++++++ Continuing ++++++++++")
     except Exception as e:
-        logging.exception("[ERROR]: Something went wrong while calculating the cost", e)
+        logging.exception("[ERROR]: Something went wrong while calculating the cost")
+        logging.exception(e)
 
     yesterday_cost_dict["smfTotalCost"] = round(yesterday_cost_dict["smfTotalCost"],2)            
     yesterday_cost_dict["lmfTotalCost"] = round(yesterday_cost_dict["lmfTotalCost"],2)      
@@ -303,5 +305,5 @@ def main(name: str) -> dict:
         return rgs_cost_json
 
     except Exception as e:
-        logging.exception("[ERROR]: Something went wrong in the activity function ", e)
+        logging.exception("[ERROR]: Something went wrong in the activity function")
         return e
