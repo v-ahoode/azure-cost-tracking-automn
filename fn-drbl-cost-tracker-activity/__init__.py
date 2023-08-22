@@ -115,7 +115,7 @@ def get_rgs_cost(resource_groups, scope, from_datetime, to_datetime, cost_mgmt_c
                         })
 
                     if rg.tags is not None and "Team" in rg.tags.keys():
-                        if rg.tags['Team'].lower() == "SQL Migration Factory".lower():
+                        if rg.tags['Team'].lower() == "Cloud Migration".lower():
                             yesterday_cost_dict["smfTotalCost"] = yesterday_cost_dict["smfTotalCost"] + total_cost
                         elif rg.tags['Team'].lower() == "Lakehouse Factory".lower():
                             yesterday_cost_dict["lmfTotalCost"] = yesterday_cost_dict["lmfTotalCost"] + total_cost
@@ -158,7 +158,7 @@ def get_rgs_cost(resource_groups, scope, from_datetime, to_datetime, cost_mgmt_c
                         })
 
                     if rg.tags is not None and "Team" in rg.tags.keys():
-                        if rg.tags['Team'].lower() == "SQL Migration Factory".lower():
+                        if rg.tags['Team'].lower() == "Cloud Migration".lower():
                             daily_cost_dict["smfTotalCost"] = daily_cost_dict["smfTotalCost"] + avg_cost
                             weekly_cost_dict["smfTotalCost"] = weekly_cost_dict["smfTotalCost"] + total_cost
                         elif rg.tags['Team'].lower() == "Lakehouse Factory".lower():
@@ -192,7 +192,7 @@ def get_rgs_cost(resource_groups, scope, from_datetime, to_datetime, cost_mgmt_c
                         })
 
                     if rg.tags is not None and "Team" in rg.tags.keys():
-                        if rg.tags['Team'].lower() == "SQL Migration Factory".lower():
+                        if rg.tags['Team'].lower() == "Cloud Migration".lower():
                             monthly_cost_dict["smfTotalCost"] = monthly_cost_dict["smfTotalCost"] + total_cost
                         elif rg.tags['Team'].lower() == "Lakehouse Factory".lower():
                             monthly_cost_dict["lmfTotalCost"] = monthly_cost_dict["lmfTotalCost"] + total_cost
