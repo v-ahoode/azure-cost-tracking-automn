@@ -1,7 +1,6 @@
 import logging
 
 import azure.functions as func
-import azure.durable_functions as df
 from datetime import datetime, timezone, timedelta
 from azure.identity import DefaultAzureCredential
 from azure.mgmt.costmanagement import CostManagementClient
@@ -38,7 +37,7 @@ def get_cost(scope_with_rg , from_datetime, to_datetime, cost_mgmt_client):
         logging.exception(e)
         return []
 
-def get_rgs_cost(resource_groups, scope, from_datetime, to_datetime, cost_mgmt_client, context):
+def get_rgs_cost(resource_groups, scope, from_datetime, to_datetime, cost_mgmt_client):
 
     logging.info("-----------------Yesterday, Daily, Weekly & Monthly Cost-----------------")
 
@@ -283,9 +282,9 @@ def get_rgs_cost(resource_groups, scope, from_datetime, to_datetime, cost_mgmt_c
             logging.info(f"--------------------------------------{str(x)}--------------------------------------")
 
             if x in range(1,100,5):
-                time_to_wait = timedelta(seconds=10)
+                time_to_wait = 10
                 logging.info("++++++++++ Request throttled, waiting for 10 secs ++++++++++")
-                yield context.create_timer(context.current_utc_datetime + time_to_wait)
+                time.sleep(time_to_wait)
                 logging.info("++++++++++ Continuing ++++++++++")
     except Exception as e:
         logging.exception("[ERROR]: Something went wrong while calculating the cost")
@@ -416,7 +415,7 @@ def get_estimation(monthly_cost_dict):
 
     return estimation_cost_dict
 
-def main(context: df.DurableActivityContext) -> dict:
+def main(name: str) -> dict:
     logging.info('Executing durable activity function')
 
     try:
@@ -453,7 +452,7 @@ def main(context: df.DurableActivityContext) -> dict:
         rgs_cost_dict["monthly"] = {}
         rgs_cost_dict["estimation"] = {}
         
-        rgs_cost_dict["yesterday"], rgs_cost_dict["daily"], rgs_cost_dict["weekly"], rgs_cost_dict["monthly"] = get_rgs_cost(resource_groups_list, scope, from_datetime, to_datetime, cost_mgmt_client, context)
+        rgs_cost_dict["yesterday"], rgs_cost_dict["daily"], rgs_cost_dict["weekly"], rgs_cost_dict["monthly"] = get_rgs_cost(resource_groups_list, scope, from_datetime, to_datetime, cost_mgmt_client)
 
         rgs_cost_dict["estimation"] = get_estimation(rgs_cost_dict["monthly"])
 
