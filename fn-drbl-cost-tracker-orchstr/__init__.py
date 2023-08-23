@@ -7,7 +7,7 @@ import azure.durable_functions as df
 
 def orchestrator_function(context: df.DurableOrchestrationContext):
     try:
-        rgs_cost = yield context.call_activity('fn-drbl-cost-tracker-activity', None)
+        rgs_cost = yield context.call_activity('fn-drbl-cost-tracker-activity', context)
         return rgs_cost
     except Exception as e:
         logging.exception(e)
