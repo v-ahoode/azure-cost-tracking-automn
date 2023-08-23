@@ -46,6 +46,13 @@ def get_rgs_cost(resource_groups, scope, from_datetime, to_datetime, cost_mgmt_c
     yesterday_cost_dict["smfTotalCost"] = float(0)
     yesterday_cost_dict["lmfTotalCost"] = float(0)
     yesterday_cost_dict["aifTotalCost"] = float(0)
+    yesterday_cost_dict["amTotalCost"] = float(0)
+    yesterday_cost_dict["autmTotalCost"] = float(0) 
+    yesterday_cost_dict["avdmTotalCost"] = float(0)
+    yesterday_cost_dict["cmTotalCost"] = float(0)
+    yesterday_cost_dict["dbmTotalCost"] = float(0)
+    yesterday_cost_dict["infraTotalCost"] = float(0)
+    yesterday_cost_dict["nwTotalCost"] = float(0)
     yesterday_cost_dict["totalCost"] = float(0)
 
     daily_cost_dict = {}
@@ -53,6 +60,13 @@ def get_rgs_cost(resource_groups, scope, from_datetime, to_datetime, cost_mgmt_c
     daily_cost_dict["smfTotalCost"] = float(0)
     daily_cost_dict["lmfTotalCost"] = float(0)
     daily_cost_dict["aifTotalCost"] = float(0)
+    daily_cost_dict["amTotalCost"] = float(0)
+    daily_cost_dict["autmTotalCost"] = float(0) 
+    daily_cost_dict["avdmTotalCost"] = float(0)
+    daily_cost_dict["cmTotalCost"] = float(0)
+    daily_cost_dict["dbmTotalCost"] = float(0)
+    daily_cost_dict["infraTotalCost"] = float(0)
+    daily_cost_dict["nwTotalCost"] = float(0)
     daily_cost_dict["totalCost"] = float(0)
 
     weekly_cost_dict = {}
@@ -60,6 +74,13 @@ def get_rgs_cost(resource_groups, scope, from_datetime, to_datetime, cost_mgmt_c
     weekly_cost_dict["smfTotalCost"] = float(0)
     weekly_cost_dict["lmfTotalCost"] = float(0)
     weekly_cost_dict["aifTotalCost"] = float(0)
+    weekly_cost_dict["amTotalCost"] = float(0)
+    weekly_cost_dict["autmTotalCost"] = float(0) 
+    weekly_cost_dict["avdmTotalCost"] = float(0)
+    weekly_cost_dict["cmTotalCost"] = float(0)
+    weekly_cost_dict["dbmTotalCost"] = float(0)
+    weekly_cost_dict["infraTotalCost"] = float(0)
+    weekly_cost_dict["nwTotalCost"] = float(0)
     weekly_cost_dict["totalCost"] = float(0)
 
     monthly_cost_dict = {}
@@ -67,6 +88,13 @@ def get_rgs_cost(resource_groups, scope, from_datetime, to_datetime, cost_mgmt_c
     monthly_cost_dict["smfTotalCost"] = float(0)
     monthly_cost_dict["lmfTotalCost"] = float(0)
     monthly_cost_dict["aifTotalCost"] = float(0)
+    monthly_cost_dict["amTotalCost"] = float(0)
+    monthly_cost_dict["autmTotalCost"] = float(0) 
+    monthly_cost_dict["avdmTotalCost"] = float(0)
+    monthly_cost_dict["cmTotalCost"] = float(0)
+    monthly_cost_dict["dbmTotalCost"] = float(0)
+    monthly_cost_dict["infraTotalCost"] = float(0)
+    monthly_cost_dict["nwTotalCost"] = float(0)
     monthly_cost_dict["totalCost"] = float(0)
 
     try:
@@ -116,12 +144,26 @@ def get_rgs_cost(resource_groups, scope, from_datetime, to_datetime, cost_mgmt_c
                         })
 
                     if rg.tags is not None and "Team" in rg.tags.keys():
-                        if rg.tags['Team'].lower() == "Cloud Migration".lower():
+                        if rg.tags['Team'].strip().lower() == "SQL Migration".strip().lower():
                             yesterday_cost_dict["smfTotalCost"] = yesterday_cost_dict["smfTotalCost"] + total_cost
-                        elif rg.tags['Team'].lower() == "Lakehouse Factory".lower():
+                        elif rg.tags['Team'].strip().lower() == "Lakehouse Migration".strip().lower():
                             yesterday_cost_dict["lmfTotalCost"] = yesterday_cost_dict["lmfTotalCost"] + total_cost
-                        elif rg.tags['Team'].lower() == "AI Factory".lower():
+                        elif rg.tags['Team'].strip().lower() == "AI".strip().lower():
                             yesterday_cost_dict["aifTotalCost"] = yesterday_cost_dict["aifTotalCost"] + total_cost
+                        elif rg.tags['Team'].strip().lower() == "App Migration".strip().lower():
+                            yesterday_cost_dict["amTotalCost"] = yesterday_cost_dict["amTotalCost"] + total_cost
+                        elif rg.tags['Team'].strip().lower() == "Automation".strip().lower():
+                            yesterday_cost_dict["autmTotalCost"] = yesterday_cost_dict["autmTotalCost"] + total_cost
+                        elif rg.tags['Team'].strip().lower() == "AVD Migration".strip().lower():
+                            yesterday_cost_dict["avdmTotalCost"] = yesterday_cost_dict["avdmTotalCost"] + total_cost
+                        elif rg.tags['Team'].strip().lower() == "Cassandra Migration".strip().lower():
+                            yesterday_cost_dict["cmTotalCost"] = yesterday_cost_dict["cmTotalCost"] + total_cost
+                        elif rg.tags['Team'].strip().lower() == "DB Migration".strip().lower():
+                            yesterday_cost_dict["dbmTotalCost"] = yesterday_cost_dict["dbmTotalCost"] + total_cost
+                        elif rg.tags['Team'].strip().lower() == "Infra".strip().lower():
+                            yesterday_cost_dict["infraTotalCost"] = yesterday_cost_dict["infraTotalCost"] + total_cost
+                        elif rg.tags['Team'].strip().lower() == "Network".strip().lower():
+                            yesterday_cost_dict["nwTotalCost"] = yesterday_cost_dict["nwTotalCost"] + total_cost
                 else:
                     logging.info(f"[INFO]: Yesterdays' cost data not available from {from_datetime.date()} to {to_datetime.date()} for RG - {rg.name}")
                 
@@ -159,15 +201,36 @@ def get_rgs_cost(resource_groups, scope, from_datetime, to_datetime, cost_mgmt_c
                         })
 
                     if rg.tags is not None and "Team" in rg.tags.keys():
-                        if rg.tags['Team'].lower() == "Cloud Migration".lower():
+                        if rg.tags['Team'].strip().lower() == "SQL Migration".strip().lower():
                             daily_cost_dict["smfTotalCost"] = daily_cost_dict["smfTotalCost"] + avg_cost
                             weekly_cost_dict["smfTotalCost"] = weekly_cost_dict["smfTotalCost"] + total_cost
-                        elif rg.tags['Team'].lower() == "Lakehouse Factory".lower():
+                        elif rg.tags['Team'].strip().lower() == "Lakehouse Migration".strip().lower():
                             daily_cost_dict["lmfTotalCost"] = daily_cost_dict["lmfTotalCost"] + avg_cost
                             weekly_cost_dict["lmfTotalCost"] = weekly_cost_dict["lmfTotalCost"] + total_cost
-                        elif rg.tags['Team'].lower() == "AI Factory".lower():
+                        elif rg.tags['Team'].strip().lower() == "AI".strip().lower():
                             daily_cost_dict["aifTotalCost"] = daily_cost_dict["aifTotalCost"] + avg_cost
                             weekly_cost_dict["aifTotalCost"] = weekly_cost_dict["aifTotalCost"] + total_cost
+                        elif rg.tags['Team'].strip().lower() == "App Migration".strip().lower():
+                            daily_cost_dict["amTotalCost"] = daily_cost_dict["amTotalCost"] + avg_cost
+                            weekly_cost_dict["amTotalCost"] = weekly_cost_dict["amTotalCost"] + total_cost
+                        elif rg.tags['Team'].strip().lower() == "Automation".strip().lower():
+                            daily_cost_dict["autmTotalCost"] = daily_cost_dict["autmTotalCost"] + avg_cost
+                            weekly_cost_dict["autmTotalCost"] = weekly_cost_dict["autmTotalCost"] + total_cost
+                        elif rg.tags['Team'].strip().lower() == "AVD Migration".strip().lower():
+                            daily_cost_dict["avdmTotalCost"] = daily_cost_dict["avdmTotalCost"] + avg_cost
+                            weekly_cost_dict["avdmTotalCost"] = weekly_cost_dict["avdmTotalCost"] + total_cost
+                        elif rg.tags['Team'].strip().lower() == "Cassandra Migration".strip().lower():
+                            daily_cost_dict["cmTotalCost"] = daily_cost_dict["cmTotalCost"] + avg_cost
+                            weekly_cost_dict["cmTotalCost"] = weekly_cost_dict["cmTotalCost"] + total_cost
+                        elif rg.tags['Team'].strip().lower() == "DB Migration".strip().lower():
+                            daily_cost_dict["dbmTotalCost"] = daily_cost_dict["dbmTotalCost"] + avg_cost
+                            weekly_cost_dict["dbmTotalCost"] = weekly_cost_dict["dbmTotalCost"] + total_cost
+                        elif rg.tags['Team'].strip().lower() == "Infra".strip().lower():
+                            daily_cost_dict["infraTotalCost"] = daily_cost_dict["infraTotalCost"] + avg_cost
+                            weekly_cost_dict["infraTotalCost"] = weekly_cost_dict["infraTotalCost"] + total_cost
+                        elif rg.tags['Team'].strip().lower() == "Network".strip().lower():
+                            daily_cost_dict["nwTotalCost"] = daily_cost_dict["nwTotalCost"] + avg_cost
+                            weekly_cost_dict["nwTotalCost"] = weekly_cost_dict["nwTotalCost"] + total_cost
                 else:
                     logging.info(f"[INFO]: Daily and Weekly cost data not available from {from_datetime.date()} to {to_datetime.date()} for RG - {rg.name}")
 
@@ -193,20 +256,34 @@ def get_rgs_cost(resource_groups, scope, from_datetime, to_datetime, cost_mgmt_c
                         })
 
                     if rg.tags is not None and "Team" in rg.tags.keys():
-                        if rg.tags['Team'].lower() == "Cloud Migration".lower():
+                        if rg.tags['Team'].strip().lower() == "SQL Migration".strip().lower():
                             monthly_cost_dict["smfTotalCost"] = monthly_cost_dict["smfTotalCost"] + total_cost
-                        elif rg.tags['Team'].lower() == "Lakehouse Factory".lower():
+                        elif rg.tags['Team'].strip().lower() == "Lakehouse Migration".strip().lower():
                             monthly_cost_dict["lmfTotalCost"] = monthly_cost_dict["lmfTotalCost"] + total_cost
-                        elif rg.tags['Team'].lower() == "AI Factory".lower():
+                        elif rg.tags['Team'].strip().lower() == "AI".strip().lower():
                             monthly_cost_dict["aifTotalCost"] = monthly_cost_dict["aifTotalCost"] + total_cost
+                        elif rg.tags['Team'].strip().lower() == "App Migration".strip().lower():
+                            monthly_cost_dict["amTotalCost"] = monthly_cost_dict["amTotalCost"] + total_cost
+                        elif rg.tags['Team'].strip().lower() == "Automation".strip().lower():
+                            monthly_cost_dict["autmTotalCost"] = monthly_cost_dict["autmTotalCost"] + total_cost
+                        elif rg.tags['Team'].strip().lower() == "AVD Migration".strip().lower():
+                            monthly_cost_dict["avdmTotalCost"] = monthly_cost_dict["avdmTotalCost"] + total_cost
+                        elif rg.tags['Team'].strip().lower() == "Cassandra Migration".strip().lower():
+                            monthly_cost_dict["cmTotalCost"] = monthly_cost_dict["cmTotalCost"] + total_cost
+                        elif rg.tags['Team'].strip().lower() == "DB Migration".strip().lower():
+                            monthly_cost_dict["dbmTotalCost"] = monthly_cost_dict["dbmTotalCost"] + total_cost
+                        elif rg.tags['Team'].strip().lower() == "Infra".strip().lower():
+                            monthly_cost_dict["infraTotalCost"] = monthly_cost_dict["infraTotalCost"] + total_cost
+                        elif rg.tags['Team'].strip().lower() == "Network".strip().lower():
+                            monthly_cost_dict["nwTotalCost"] = monthly_cost_dict["nwTotalCost"] + total_cost
                 else:
                     logging.info(f"[INFO]: Monthly cost data not available from {from_datetime.date()} to {to_datetime.date()} for RG - {rg.name}")
 
             logging.info(f"--------------------------------------{str(x)}--------------------------------------")
 
             if x in range(1,100,5):
-                logging.info("++++++++++ Request throttled, waiting for 10 secs ++++++++++")
-                time.sleep(10)
+                logging.info("++++++++++ Request throttled, waiting for 15 secs ++++++++++")
+                time.sleep(15)
                 logging.info("++++++++++ Continuing ++++++++++")
     except Exception as e:
         logging.exception("[ERROR]: Something went wrong while calculating the cost")
@@ -214,29 +291,93 @@ def get_rgs_cost(resource_groups, scope, from_datetime, to_datetime, cost_mgmt_c
 
     yesterday_cost_dict["smfTotalCost"] = round(yesterday_cost_dict["smfTotalCost"],2)            
     yesterday_cost_dict["lmfTotalCost"] = round(yesterday_cost_dict["lmfTotalCost"],2)      
-    yesterday_cost_dict["aifTotalCost"] = round(yesterday_cost_dict["aifTotalCost"],2)      
-    yesterday_cost_dict["totalCost"] = round(yesterday_cost_dict["smfTotalCost"] + yesterday_cost_dict["lmfTotalCost"] + yesterday_cost_dict["aifTotalCost"],2)
+    yesterday_cost_dict["aifTotalCost"] = round(yesterday_cost_dict["aifTotalCost"],2)
+    yesterday_cost_dict["amTotalCost"] = round(yesterday_cost_dict["amTotalCost"],2)
+    yesterday_cost_dict["autmTotalCost"] = round(yesterday_cost_dict["autmTotalCost"],2) 
+    yesterday_cost_dict["avdmTotalCost"] = round(yesterday_cost_dict["avdmTotalCost"],2)
+    yesterday_cost_dict["cmTotalCost"] = round(yesterday_cost_dict["cmTotalCost"],2)
+    yesterday_cost_dict["dbmTotalCost"] = round(yesterday_cost_dict["dbmTotalCost"],2)
+    yesterday_cost_dict["infraTotalCost"] = round(yesterday_cost_dict["infraTotalCost"],2)
+    yesterday_cost_dict["nwTotalCost"] = round(yesterday_cost_dict["nwTotalCost"],2)    
+    yesterday_cost_dict["totalCost"] = round(yesterday_cost_dict["smfTotalCost"]
+                                             + yesterday_cost_dict["lmfTotalCost"]
+                                             + yesterday_cost_dict["aifTotalCost"]
+                                             + yesterday_cost_dict["amTotalCost"]
+                                             + yesterday_cost_dict["autmTotalCost"]
+                                             + yesterday_cost_dict["avdmTotalCost"]
+                                             + yesterday_cost_dict["cmTotalCost"]
+                                             + yesterday_cost_dict["dbmTotalCost"]
+                                             + yesterday_cost_dict["infraTotalCost"]
+                                             + yesterday_cost_dict["nwTotalCost"], 2)
     yesterday_cost_dict["fromDate"] = str(to_datetime.date())
     yesterday_cost_dict["toDate"] = str(to_datetime.date())
 
     daily_cost_dict["smfTotalCost"] = round(daily_cost_dict["smfTotalCost"],2)            
     daily_cost_dict["lmfTotalCost"] = round(daily_cost_dict["lmfTotalCost"],2)      
-    daily_cost_dict["aifTotalCost"] = round(daily_cost_dict["aifTotalCost"],2)      
-    daily_cost_dict["totalCost"] = round(daily_cost_dict["smfTotalCost"] + daily_cost_dict["lmfTotalCost"] + daily_cost_dict["aifTotalCost"],2)
+    daily_cost_dict["aifTotalCost"] = round(daily_cost_dict["aifTotalCost"],2) 
+    daily_cost_dict["amTotalCost"] = round(daily_cost_dict["amTotalCost"],2)
+    daily_cost_dict["autmTotalCost"] = round(daily_cost_dict["autmTotalCost"],2) 
+    daily_cost_dict["avdmTotalCost"] = round(daily_cost_dict["avdmTotalCost"],2)
+    daily_cost_dict["cmTotalCost"] = round(daily_cost_dict["cmTotalCost"],2)
+    daily_cost_dict["dbmTotalCost"] = round(daily_cost_dict["dbmTotalCost"],2)
+    daily_cost_dict["infraTotalCost"] = round(daily_cost_dict["infraTotalCost"],2)
+    daily_cost_dict["nwTotalCost"] = round(daily_cost_dict["nwTotalCost"],2)     
+    daily_cost_dict["totalCost"] = round(daily_cost_dict["smfTotalCost"]
+                                             + daily_cost_dict["lmfTotalCost"]
+                                             + daily_cost_dict["aifTotalCost"]
+                                             + daily_cost_dict["amTotalCost"]
+                                             + daily_cost_dict["autmTotalCost"]
+                                             + daily_cost_dict["avdmTotalCost"]
+                                             + daily_cost_dict["cmTotalCost"]
+                                             + daily_cost_dict["dbmTotalCost"]
+                                             + daily_cost_dict["infraTotalCost"]
+                                             + daily_cost_dict["nwTotalCost"], 2)
     daily_cost_dict["fromDate"] = str((to_datetime - timedelta(days=7)).date())
     daily_cost_dict["toDate"] = str((to_datetime - timedelta(days=1)).date())
 
     weekly_cost_dict["smfTotalCost"] = round(weekly_cost_dict["smfTotalCost"],2)            
     weekly_cost_dict["lmfTotalCost"] = round(weekly_cost_dict["lmfTotalCost"],2)      
-    weekly_cost_dict["aifTotalCost"] = round(weekly_cost_dict["aifTotalCost"],2)      
-    weekly_cost_dict["totalCost"] = round(weekly_cost_dict["smfTotalCost"] + weekly_cost_dict["lmfTotalCost"] + weekly_cost_dict["aifTotalCost"],2)
+    weekly_cost_dict["aifTotalCost"] = round(weekly_cost_dict["aifTotalCost"],2)
+    weekly_cost_dict["amTotalCost"] = round(weekly_cost_dict["amTotalCost"],2)
+    weekly_cost_dict["autmTotalCost"] = round(weekly_cost_dict["autmTotalCost"],2) 
+    weekly_cost_dict["avdmTotalCost"] = round(weekly_cost_dict["avdmTotalCost"],2)
+    weekly_cost_dict["cmTotalCost"] = round(weekly_cost_dict["cmTotalCost"],2)
+    weekly_cost_dict["dbmTotalCost"] = round(weekly_cost_dict["dbmTotalCost"],2)
+    weekly_cost_dict["infraTotalCost"] = round(weekly_cost_dict["infraTotalCost"],2)
+    weekly_cost_dict["nwTotalCost"] = round(weekly_cost_dict["nwTotalCost"],2)      
+    weekly_cost_dict["totalCost"] = round(weekly_cost_dict["smfTotalCost"]
+                                             + weekly_cost_dict["lmfTotalCost"]
+                                             + weekly_cost_dict["aifTotalCost"]
+                                             + weekly_cost_dict["amTotalCost"]
+                                             + weekly_cost_dict["autmTotalCost"]
+                                             + weekly_cost_dict["avdmTotalCost"]
+                                             + weekly_cost_dict["cmTotalCost"]
+                                             + weekly_cost_dict["dbmTotalCost"]
+                                             + weekly_cost_dict["infraTotalCost"]
+                                             + weekly_cost_dict["nwTotalCost"], 2)
     weekly_cost_dict["fromDate"] = str((to_datetime - timedelta(days=7)).date())
     weekly_cost_dict["toDate"] = str((to_datetime - timedelta(days=1)).date())
 
     monthly_cost_dict["smfTotalCost"] = round(monthly_cost_dict["smfTotalCost"],2)            
     monthly_cost_dict["lmfTotalCost"] = round(monthly_cost_dict["lmfTotalCost"],2)      
-    monthly_cost_dict["aifTotalCost"] = round(monthly_cost_dict["aifTotalCost"],2)      
-    monthly_cost_dict["totalCost"] = round(monthly_cost_dict["smfTotalCost"] + monthly_cost_dict["lmfTotalCost"] + monthly_cost_dict["aifTotalCost"],2)
+    monthly_cost_dict["aifTotalCost"] = round(monthly_cost_dict["aifTotalCost"],2)
+    monthly_cost_dict["amTotalCost"] = round(monthly_cost_dict["amTotalCost"],2)
+    monthly_cost_dict["autmTotalCost"] = round(monthly_cost_dict["autmTotalCost"],2) 
+    monthly_cost_dict["avdmTotalCost"] = round(monthly_cost_dict["avdmTotalCost"],2)
+    monthly_cost_dict["cmTotalCost"] = round(monthly_cost_dict["cmTotalCost"],2)
+    monthly_cost_dict["dbmTotalCost"] = round(monthly_cost_dict["dbmTotalCost"],2)
+    monthly_cost_dict["infraTotalCost"] = round(monthly_cost_dict["infraTotalCost"],2)
+    monthly_cost_dict["nwTotalCost"] = round(monthly_cost_dict["nwTotalCost"],2)  
+    monthly_cost_dict["totalCost"] = round(monthly_cost_dict["smfTotalCost"]
+                                             + monthly_cost_dict["lmfTotalCost"]
+                                             + monthly_cost_dict["aifTotalCost"]
+                                             + monthly_cost_dict["amTotalCost"]
+                                             + monthly_cost_dict["autmTotalCost"]
+                                             + monthly_cost_dict["avdmTotalCost"]
+                                             + monthly_cost_dict["cmTotalCost"]
+                                             + monthly_cost_dict["dbmTotalCost"]
+                                             + monthly_cost_dict["infraTotalCost"]
+                                             + monthly_cost_dict["nwTotalCost"], 2)
     monthly_cost_dict["fromDate"] = str((to_datetime - timedelta(days=30)).date())
     monthly_cost_dict["toDate"] = str((to_datetime - timedelta(days=1)).date())
 
@@ -250,11 +391,25 @@ def get_estimation(monthly_cost_dict):
     estimation_cost_dict["smfTotalCost"] = float(0)
     estimation_cost_dict["lmfTotalCost"] = float(0)
     estimation_cost_dict["aifTotalCost"] = float(0)
+    estimation_cost_dict["amTotalCost"] = float(0)
+    estimation_cost_dict["autmTotalCost"] = float(0) 
+    estimation_cost_dict["avdmTotalCost"] = float(0)
+    estimation_cost_dict["cmTotalCost"] = float(0)
+    estimation_cost_dict["dbmTotalCost"] = float(0)
+    estimation_cost_dict["infraTotalCost"] = float(0)
+    estimation_cost_dict["nwTotalCost"] = float(0)
     estimation_cost_dict["totalCost"] = float(0)
 
     estimation_cost_dict["smfTotalCost"] = round(monthly_cost_dict["smfTotalCost"] * 12, 2)
     estimation_cost_dict["lmfTotalCost"] = round(monthly_cost_dict["lmfTotalCost"] * 12, 2)
     estimation_cost_dict["aifTotalCost"] = round(monthly_cost_dict["aifTotalCost"] * 12, 2)
+    estimation_cost_dict["amTotalCost"] = round(monthly_cost_dict["amTotalCost"] * 12, 2)
+    estimation_cost_dict["autmTotalCost"] = round(monthly_cost_dict["autmTotalCost"] * 12, 2) 
+    estimation_cost_dict["avdmTotalCost"] = round(monthly_cost_dict["avdmTotalCost"] * 12, 2)
+    estimation_cost_dict["cmTotalCost"] = round(monthly_cost_dict["cmTotalCost"] * 12, 2)
+    estimation_cost_dict["dbmTotalCost"] = round(monthly_cost_dict["dbmTotalCost"] * 12, 2)
+    estimation_cost_dict["infraTotalCost"] = round(monthly_cost_dict["infraTotalCost"] * 12, 2)
+    estimation_cost_dict["nwTotalCost"] = round(monthly_cost_dict["nwTotalCost"] * 12, 2)
     estimation_cost_dict["totalCost"] = round(monthly_cost_dict["totalCost"] * 12, 2)
 
     return estimation_cost_dict
